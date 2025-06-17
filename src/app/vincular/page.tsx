@@ -1,45 +1,25 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { signIn, signOut, useSession } from "next-auth/react";
-
-interface AdAccount {
-  id: string;
-  name: string;
-  account_id: string;
-}
 
 export default function VincularPage() {
   const { data: session, status } = useSession();
-  const [adAccounts, setAdAccounts] = useState<AdAccount[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [adAccountId, setAdAccountId] = useState("");
 
-  useEffect(() => {
-    if (status === "authenticated" && session?.accessToken) {
-      setLoading(true);
-      fetch("/api/fb/adaccounts")
-        .then(res => res.json())
-        .then(data => {
-          if (data.error) {
-            setError(data.error.message || "Erro ao buscar contas de anúncios");
-          } else if (data.data && Array.isArray(data.data)) {
-            setAdAccounts(data.data);
-          }
-        })
-        .catch(() => {
-          setError("Falha ao conectar com a API do Facebook");
-        })
-        .finally(() => {
-          setLoading(false);
-        });
-    }
-  }, [session, status]);
+  const handleFacebookLogin = () => {
+    signIn("facebook", { 
+      callbackUrl: "/vincular",
+      scope: "email,public_profile" 
+    });
+  };
 
   const generateBusinessLink = (adAccountId: string) => {
+    // Remove 'act_' prefix if present
     const cleanId = adAccountId.startsWith("act_") 
       ? adAccountId.substring(4) 
       : adAccountId;
+      
     return `https://business.facebook.com/settings/ad-accounts/act_${cleanId}/users`;
   };
 
@@ -53,7 +33,7 @@ export default function VincularPage() {
         <h1 className="text-2xl font-bold mb-4">Vincular Conta de Anúncios</h1>
         <p className="mb-4">Para vincular sua conta de anúncios, faça login com o Facebook.</p>
         <button
-          onClick={() => signIn("facebook")}
+          onClick={handleFacebookLogin}
           className="bg-blue-600 text-white px-4 py-2 rounded"
         >
           Entrar com Facebook
@@ -74,49 +54,60 @@ export default function VincularPage() {
         </button>
       </div>
 
-      {loading ? (
-        <div className="text-center py-4">Buscando suas contas de anúncios...</div>
-      ) : error ? (
-        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded">
-          <p>{error}</p>
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        <h2 className="font-medium mb-4">
+          Olá {session?.user?.name}, vamos vincular sua conta de anúncios:
+        </h2>
+        
+        <div className="mb-6">
+          <label className="block text-sm font-medium mb-2">
+            Digite o ID da sua conta de anúncios:
+          </label>
+          <div className="flex">
+            <input
+              type="text"
+              value={adAccountId}
+              onChange={(e) => setAdAccountId(e.target.value)}
+              placeholder="Ex: 123456789 ou act_123456789"
+              className="flex-1 border rounded-l px-3 py-2"
+            />
+            <a
+              href={adAccountId ? generateBusinessLink(adAccountId) : "#"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`bg-blue-600 text-white px-4 py-2 rounded-r ${!adAccountId && "opacity-50 cursor-not-allowed"}`}
+              onClick={(e) => !adAccountId && e.preventDefault()}
+            >
+              Acessar
+            </a>
+          </div>
+          <p className="text-sm text-gray-500 mt-1">
+            Você pode encontrar o ID da sua conta de anúncios no Gerenciador de Anúncios do Facebook.
+          </p>
         </div>
-      ) : adAccounts.length > 0 ? (
-        <div>
-          <h2 className="font-medium mb-4">
-            Olá {session?.user?.name}, detectamos sua(s) conta(s) de anúncios:
-          </h2>
-          
-          {adAccounts.map((account) => (
-            <div key={account.id} className="border rounded p-4 mb-4">
-              <p className="font-medium">{account.name}</p>
-              <p className="text-sm text-gray-500 mb-3">ID: {account.account_id || account.id}</p>
-              
-              <a
-                href={generateBusinessLink(account.account_id || account.id)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block bg-blue-600 text-white text-center px-4 py-2 rounded mb-3"
-              >
-                Clique aqui para me dar acesso
-              </a>
-              
-              <div className="bg-gray-50 p-3 rounded">
-                <h3 className="font-medium mb-2">Instruções:</h3>
-                <ol className="list-decimal list-inside space-y-1 text-sm">
-                  <li>Na próxima tela, clique em <strong>Adicionar Pessoa</strong></li>
-                  <li>Digite: <strong>contato@minhaempresa.com</strong></li>
-                  <li>Marque: <strong>Administrador (todas as permissões)</strong></li>
-                  <li>Clique em <strong>Concluir</strong></li>
-                </ol>
-              </div>
-            </div>
-          ))}
+        
+        <div className="bg-gray-50 p-4 rounded-md">
+          <h3 className="font-medium mb-2">Como encontrar o ID da sua conta:</h3>
+          <ol className="list-decimal list-inside space-y-2 text-sm">
+            <li>Acesse o <a href="https://business.facebook.com/adsmanager" target="_blank" rel="noopener noreferrer" className="text-blue-600">Gerenciador de Anúncios</a></li>
+            <li>No menu superior, clique no nome da sua conta</li>
+            <li>Você verá o ID da conta no formato "act_123456789"</li>
+            <li>Digite esse número (com ou sem o prefixo "act_") no campo acima</li>
+          </ol>
         </div>
-      ) : (
-        <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 p-4 rounded">
-          <p>Não encontramos nenhuma conta de anúncios vinculada ao seu perfil.</p>
-        </div>
-      )}
+        
+        {adAccountId && (
+          <div className="mt-6 bg-blue-50 p-4 rounded-md border border-blue-100">
+            <h3 className="font-medium mb-2">Instruções após clicar em "Acessar":</h3>
+            <ol className="list-decimal list-inside space-y-1 text-sm">
+              <li>Na próxima tela, clique em <strong>Adicionar Pessoa</strong></li>
+              <li>Digite: <strong>contato@minhaempresa.com</strong></li>
+              <li>Marque: <strong>Administrador (todas as permissões)</strong></li>
+              <li>Clique em <strong>Concluir</strong></li>
+            </ol>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
