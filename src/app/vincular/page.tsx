@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { signIn, signOut, useSession } from "next-auth/react";
+import Link from "next/link";
 
 export default function VincularPage() {
   const { data: session, status } = useSession();
@@ -38,6 +39,12 @@ export default function VincularPage() {
         >
           Entrar com Facebook
         </button>
+        <p className="mt-6 text-sm text-gray-500">
+          Ao fazer login, você concorda com nossa{" "}
+          <Link href="/politicas" className="text-blue-600 hover:underline">
+            Política de Privacidade
+          </Link>
+        </p>
       </div>
     );
   }
@@ -91,8 +98,8 @@ export default function VincularPage() {
           <ol className="list-decimal list-inside space-y-2 text-sm">
             <li>Acesse o <a href="https://business.facebook.com/adsmanager" target="_blank" rel="noopener noreferrer" className="text-blue-600">Gerenciador de Anúncios</a></li>
             <li>No menu superior, clique no nome da sua conta</li>
-            <li>Você verá o ID da conta no formato "act_123456789"</li>
-            <li>Digite esse número (com ou sem o prefixo "act_") no campo acima</li>
+            <li>Você verá o ID da conta no formato &ldquo;act_123456789&rdquo;</li>
+            <li>Digite esse número (com ou sem o prefixo &ldquo;act_&rdquo;) no campo acima</li>
           </ol>
         </div>
         
@@ -107,6 +114,12 @@ export default function VincularPage() {
             </ol>
           </div>
         )}
+        
+        <div className="mt-8 pt-4 border-t border-gray-200 text-center">
+          <Link href="/politicas" className="text-sm text-gray-500 hover:text-gray-700">
+            Política de Privacidade
+          </Link>
+        </div>
       </div>
     </div>
   );
